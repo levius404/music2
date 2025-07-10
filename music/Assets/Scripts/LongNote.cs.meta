@@ -1,0 +1,13 @@
+fileFormatVersion: 2
+guid: 5405a1e0d887dca44a5c10c7a7f88a51
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - visualTransform: {instanceID: 0}
+  - judgeEffectPrefab: {fileID: 728976312164446801, guid: 6c1627205028c6c4cbd8c98d9d2cb98e, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

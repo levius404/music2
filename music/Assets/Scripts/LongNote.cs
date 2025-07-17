@@ -8,8 +8,8 @@ public class LongNote : MonoBehaviour
     private bool started = false;
     private bool judged = false;
 
-    public Transform visual; // 子物体：SpriteRenderer显示体
-    private SpriteRenderer sr;
+    public Transform visual; // 显示体（包含 head, body, tail）
+    private SpriteRenderer[] spriteRenderers;
 
     private float initialHeight;
     private float fadeStartTime;
@@ -18,7 +18,7 @@ public class LongNote : MonoBehaviour
     void Start()
     {
         if (visual != null)
-            sr = visual.GetComponent<SpriteRenderer>();
+            spriteRenderers = visual.GetComponentsInChildren<SpriteRenderer>();
     }
 
     public void Init(NoteData data)
@@ -33,20 +33,32 @@ public class LongNote : MonoBehaviour
         float totalDistance = spawnY - judgeY;
         float speed = totalDistance / offset;
 
-        // 初始视觉高度（根据持续时间）
+        // 视觉高度（用于 body 拉伸）
         initialHeight = speed * data.duration;
 
         if (visual != null)
         {
-            visual.localScale = new Vector3(visual.localScale.x, initialHeight, visual.localScale.z);
-            visual.localPosition = new Vector3(0, -initialHeight / 2f, 0);
+            Transform head = visual.Find("head");
+            Transform body = visual.Find("body");
+            Transform tail = visual.Find("tail");
+
+            float bodyHeight = speed * data.duration;
+
+            // 设置 body 高度（Y轴缩放），居中对齐
+            if (body != null)
+            {
+                body.localScale = new Vector3(1, bodyHeight, 1);
+                body.localPosition = new Vector3(0, -bodyHeight / 2f, 0);
+            }
+
+            // head 固定在顶部
+            if (head != null)
+                head.localPosition = Vector3.zero;
+
+            // tail 固定在底部
+            if (tail != null)
+                tail.localPosition = new Vector3(0, -bodyHeight, 0);
         }
-
-        // 设置初始位置在顶部
-        transform.position = new Vector3(transform.position.x, spawnY, 0);
-
-        fadeStartTime = endTime;
-        fadeDuration = offset;
     }
 
     void Update()
@@ -57,14 +69,14 @@ public class LongNote : MonoBehaviour
         float spawnY = NoteSpawner.Instance.spawnY;
         float judgeY = JudgeManager.Instance.judgeY;
 
-        // ⬇️ 1. 整体本体移动：从 spawnY → judgeY
+        // 1. 整体下落
         float fallStart = startTime - offset;
         float fallEnd = endTime;
         float fallProgress = Mathf.InverseLerp(fallStart, fallEnd, t);
         float y = Mathf.Lerp(spawnY, judgeY, fallProgress);
         transform.position = new Vector3(transform.position.x, y, 0);
 
-        // ✅ 2. 判定逻辑
+        // 2. 判定逻辑
         if (!started && Mathf.Abs(t - startTime) <= JudgeManager.Instance.perfectTime)
         {
             if (Input.GetKey(JudgeManager.Instance.keys[lane]))
@@ -87,26 +99,34 @@ public class LongNote : MonoBehaviour
             }
         }
 
-        // 🟦 3. 缩短尾部（视觉变短）
+        // 3. 尾部收缩（视觉高度变短）
         if (t >= startTime && t <= endTime)
         {
             float shrinkProgress = Mathf.InverseLerp(startTime, endTime, t);
             float currentHeight = Mathf.Lerp(initialHeight, 0f, shrinkProgress);
 
-            if (visual != null)
+            Transform body = visual.Find("body");
+            Transform tail = visual.Find("tail");
+
+            if (body != null)
             {
-                visual.localScale = new Vector3(visual.localScale.x, currentHeight, visual.localScale.z);
-                visual.localPosition = new Vector3(0, -currentHeight / 2f, 0);
+                body.localScale = new Vector3(1, currentHeight, 1);
+                body.localPosition = new Vector3(0, -currentHeight / 2f, 0);
+            }
+
+            if (tail != null)
+            {
+                tail.localPosition = new Vector3(0, -currentHeight, 0);
             }
         }
 
-        // 🟨 4. 淡出（透明度）
-        if (t >= fadeStartTime)
+        // 4. 淡出效果（作用于全部 SpriteRenderer）
+        if (t >= fadeStartTime && spriteRenderers != null)
         {
             float fadeProgress = Mathf.InverseLerp(fadeStartTime, fadeStartTime + fadeDuration, t);
             float alpha = 1f - fadeProgress;
 
-            if (sr != null)
+            foreach (var sr in spriteRenderers)
             {
                 Color c = sr.color;
                 c.a = alpha;
@@ -114,7 +134,7 @@ public class LongNote : MonoBehaviour
             }
         }
 
-        // ❌ 5. 超时销毁
+        // 5. 超时销毁
         if (t >= endTime + offset)
         {
             Destroy(gameObject);

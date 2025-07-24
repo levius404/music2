@@ -1256,7 +1256,7 @@ MonoBehaviour:
   - {fileID: 248736117}
   - {fileID: 267484568}
   notePrefab: {fileID: 7215666730361207897, guid: 3454eaa9ad9c5424d932b512a3fe4ec9, type: 3}
-  longNotePrefab: {fileID: 3903516527586072611, guid: cc4681adf967bf44eaf3945a22f08561, type: 3}
+  longNotePrefab: {fileID: 3005415047274924976, guid: 0b6f619e58f8f8a49a6b1f1c22a53431, type: 3}
   spawnY: 6
 --- !u!4 &2008115715
 Transform:

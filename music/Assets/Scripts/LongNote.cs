@@ -8,17 +8,22 @@ public class LongNote : MonoBehaviour
     private bool started = false;
     private bool judged = false;
 
-    public Transform visual; // 显示体（包含 head, body, tail）
     private SpriteRenderer[] spriteRenderers;
+    private SpriteRenderer bodySpriteRenderer;
 
+    private Transform head, body, tail;
     private float initialHeight;
     private float fadeStartTime;
     private float fadeDuration;
 
     void Start()
     {
-        if (visual != null)
-            spriteRenderers = visual.GetComponentsInChildren<SpriteRenderer>();
+        head = transform.Find("Head");
+        body = transform.Find("Body");
+        tail = transform.Find("Tail");
+
+        bodySpriteRenderer = body.GetComponent<SpriteRenderer>();
+        spriteRenderers = GetComponentsInChildren<SpriteRenderer>();
     }
 
     public void Init(NoteData data)
@@ -30,49 +35,48 @@ public class LongNote : MonoBehaviour
         float offset = MusicManager.Instance.spawnOffset;
         float spawnY = NoteSpawner.Instance.spawnY;
         float judgeY = JudgeManager.Instance.judgeY;
-        float totalDistance = spawnY - judgeY;
-        float speed = totalDistance / offset;
+        float speed = (spawnY - judgeY) / offset;
 
-        // 视觉高度（用于 body 拉伸）
         initialHeight = speed * data.duration;
 
-        if (visual != null)
+        // 设置轨道位置
+        Vector3 lanePos = NoteSpawner.Instance.lanes[data.lane].position;
+        transform.position = new Vector3(lanePos.x, spawnY, 0);
+
+        // 设置 Body size（使用 Sliced 模式的 SpriteRenderer）
+        if (bodySpriteRenderer != null)
         {
-            Transform head = visual.Find("head");
-            Transform body = visual.Find("body");
-            Transform tail = visual.Find("tail");
-
-            float bodyHeight = speed * data.duration;
-
-            // 设置 body 高度（Y轴缩放），居中对齐
-            if (body != null)
-            {
-                body.localScale = new Vector3(1, bodyHeight, 1);
-                body.localPosition = new Vector3(0, -bodyHeight / 2f, 0);
-            }
-
-            // head 固定在顶部
-            if (head != null)
-                head.localPosition = Vector3.zero;
-
-            // tail 固定在底部
-            if (tail != null)
-                tail.localPosition = new Vector3(0, -bodyHeight, 0);
+            float width = bodySpriteRenderer.size.x;
+            bodySpriteRenderer.size = new Vector2(width, initialHeight);
+            body.localPosition = new Vector3(0, -initialHeight / 2f, 0);
         }
+
+        if (head != null)
+            head.localPosition = Vector3.zero;
+
+        if (tail != null)
+            tail.localPosition = new Vector3(0, -initialHeight, 0);
+
+        fadeStartTime = endTime;
+        fadeDuration = offset;
+
+        Debug.Log($"✅ LongNote Init lane {lane}, height = {initialHeight}");
+
+        // 可选调试 Cube
+        var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        cube.transform.position = transform.position;
+        cube.transform.localScale = Vector3.one * 0.1f;
     }
 
     void Update()
     {
         float t = MusicManager.Instance.GetMusicTime();
         float offset = MusicManager.Instance.spawnOffset;
-
         float spawnY = NoteSpawner.Instance.spawnY;
         float judgeY = JudgeManager.Instance.judgeY;
 
-        // 1. 整体下落
-        float fallStart = startTime - offset;
-        float fallEnd = endTime;
-        float fallProgress = Mathf.InverseLerp(fallStart, fallEnd, t);
+        // 1. 让 Head 在 startTime 到达 judgeY
+        float fallProgress = Mathf.InverseLerp(startTime - offset, startTime, t);
         float y = Mathf.Lerp(spawnY, judgeY, fallProgress);
         transform.position = new Vector3(transform.position.x, y, 0);
 
@@ -90,37 +94,26 @@ public class LongNote : MonoBehaviour
         {
             judged = true;
             if (started && Input.GetKey(JudgeManager.Instance.keys[lane]))
-            {
                 Debug.Log("✅ LongNote Success");
-            }
             else
-            {
                 Debug.Log("❌ LongNote Failed");
-            }
         }
 
-        // 3. 尾部收缩（视觉高度变短）
-        if (t >= startTime && t <= endTime)
+        // 3. 收缩视觉长度（使用 .size 而不是 .localScale）
+        if (started && t <= endTime && bodySpriteRenderer != null)
         {
             float shrinkProgress = Mathf.InverseLerp(startTime, endTime, t);
-            float currentHeight = Mathf.Lerp(initialHeight, 0f, shrinkProgress);
+            float currentHeight = Mathf.Max(Mathf.Lerp(initialHeight, 0f, shrinkProgress), 0.01f);
 
-            Transform body = visual.Find("body");
-            Transform tail = visual.Find("tail");
-
-            if (body != null)
-            {
-                body.localScale = new Vector3(1, currentHeight, 1);
-                body.localPosition = new Vector3(0, -currentHeight / 2f, 0);
-            }
+            float width = bodySpriteRenderer.size.x;
+            bodySpriteRenderer.size = new Vector2(width, currentHeight);
+            body.localPosition = new Vector3(0, -currentHeight / 2f, 0);
 
             if (tail != null)
-            {
                 tail.localPosition = new Vector3(0, -currentHeight, 0);
-            }
         }
 
-        // 4. 淡出效果（作用于全部 SpriteRenderer）
+        // 4. 淡出
         if (t >= fadeStartTime && spriteRenderers != null)
         {
             float fadeProgress = Mathf.InverseLerp(fadeStartTime, fadeStartTime + fadeDuration, t);
@@ -134,10 +127,8 @@ public class LongNote : MonoBehaviour
             }
         }
 
-        // 5. 超时销毁
+        // 5. 自动销毁
         if (t >= endTime + offset)
-        {
             Destroy(gameObject);
-        }
     }
 }

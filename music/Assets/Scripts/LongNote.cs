@@ -38,11 +38,9 @@ public class LongNote : MonoBehaviour
         float judgeY = JudgeManager.Instance.judgeY;
         float speed = (spawnY - judgeY) / offset;
 
-        // initialHeight 代表音符在完全展开时的长度
         initialHeight = speed * data.duration;
 
         Vector3 lanePos = NoteSpawner.Instance.lanes[data.lane].position;
-        // 初始位置应该以音符的尾部作为基准，所以要加上一个偏移量
         transform.position = new Vector3(lanePos.x, spawnY + initialHeight, 0);
 
         fadeStartTime = endTime;
@@ -59,7 +57,6 @@ public class LongNote : MonoBehaviour
         float judgeY = JudgeManager.Instance.judgeY;
 
         // 1. 下落逻辑：尾部在 startTime 到达 judgeY
-        // 这次我们用尾部作为下落的基准点，它会从 spawnY 移动到 judgeY
         float tailFallProgress = Mathf.InverseLerp(startTime - offset, startTime, t);
         float y = Mathf.Lerp(spawnY, judgeY, tailFallProgress);
         transform.position = new Vector3(transform.position.x, y, 0);
@@ -69,7 +66,6 @@ public class LongNote : MonoBehaviour
         float currentHeight = Mathf.Max(Mathf.Lerp(initialHeight, 0f, lengthProgress), 0.01f);
 
         // 3. 调整 Body 和 Head 的位置，使它们跟随 Tail
-        // **本次修改的重点：所有子对象的位置都改为正值，使其在Tail上方**
         if (body != null)
         {
             body.localScale = new Vector3(body.localScale.x, currentHeight / body.GetComponent<SpriteRenderer>().sprite.bounds.size.y, body.localScale.z);
@@ -99,21 +95,7 @@ public class LongNote : MonoBehaviour
                 Debug.Log("❌ LongNote Failed");
         }
 
-        // 6. 淡出
-        if (t >= fadeStartTime && spriteRenderers != null)
-        {
-            float fadeProgress = Mathf.InverseLerp(fadeStartTime, fadeStartTime + fadeDuration, t);
-            float alpha = 1f - fadeProgress;
-
-            foreach (var sr in spriteRenderers)
-            {
-                Color c = sr.color;
-                c.a = alpha;
-                sr.color = c;
-            }
-        }
-
-        // 7. 自动销毁
+        // 6. 自动销毁
         if (t >= endTime + offset)
             Destroy(gameObject);
     }

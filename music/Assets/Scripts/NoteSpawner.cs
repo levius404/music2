@@ -20,7 +20,11 @@ public class NoteSpawner : MonoBehaviour
         if (data.duration > 0)
         {
             GameObject obj = Instantiate(longNotePrefab, spawnPos, Quaternion.identity);
-            obj.GetComponent<LongNote>().Init(data);
+            LongNote longNote = obj.GetComponent<LongNote>();
+            longNote.Init(data);
+
+            // 【关键修改】：将长音符注册到 JudgeManager
+            JudgeManager.Instance.RegisterLongNote(longNote);
         }
         else
         {

@@ -172,7 +172,7 @@ public class JudgeManager : MonoBehaviour
     public void MissLongNote(LongNote longNote)
     {
         longNoteQueues[longNote.GetLane()].Remove(longNote);
-        Debug.Log("❌ LongNote Miss");
+        Debug.Log("❌ LongNote Miss - REMOVED FROM QUEUE");
     }
 
     private void Judge(int lane, float currentTime)

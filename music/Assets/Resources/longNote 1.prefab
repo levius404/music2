@@ -215,6 +215,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5405a1e0d887dca44a5c10c7a7f88a51, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  offScreenDestroyY: -20
 --- !u!1 &3874228867679304130
 GameObject:
   m_ObjectHideFlags: 0

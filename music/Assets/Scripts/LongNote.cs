@@ -15,7 +15,7 @@ public class LongNote : MonoBehaviour
     private float initialHeight;
 
     // 屏幕外销毁的Y坐标
-    public float offScreenDestroyY = -5f;
+    public float offScreenDestroyY = -20f;
 
     void Start()
     {
@@ -69,16 +69,22 @@ public class LongNote : MonoBehaviour
         float speed = (spawnY - judgeY) / offset;
 
 
+
+
         // 1. 下落逻辑：
         float timeSinceJudgeLine = t - startTime;
         float y = judgeY - (speed * timeSinceJudgeLine);
         transform.position = new Vector3(transform.position.x, y, 0);
+
+        // 检查 y 的计算值：
+         Debug.Log($"Calculated Y: {y:F2}"); // 如果需要，可以启用这个
 
         // 2. 长度收缩逻辑：
         float timeSinceHeadJudgeLine = t - endTime;
         float headY_Absolute = judgeY - (speed * timeSinceHeadJudgeLine);// 头部绝对位置 = 判定线位置 - (下落速度 * 经过判定线后的时间)
         float currentHeight = headY_Absolute - y;// 当前长度 = 头部绝对位置 - 尾部绝对位置
         currentHeight = Mathf.Max(currentHeight, 0.01f);// 限制最小长度
+
 
         // 3. 调整 Body 和 Head 的位置 (保持不变)
         if (body != null)
@@ -90,14 +96,20 @@ public class LongNote : MonoBehaviour
         if (head != null)
             head.localPosition = new Vector3(0, currentHeight, 0);
 
+        // 🔴 持续日志：追踪位置变化
+        Debug.Log($"Lane {lane} T={t:F2} Y={transform.position.y:F2} Height={currentHeight:F2}");
         // ==========================================================
         // 【判定逻辑区】
 
         // 4. Miss 判定逻辑
         // 如果头部已经完全经过判定窗口，且音符尚未被持有或判定，则判定 Miss。
+
         if (!judged && !started && t > startTime + JudgeManager.Instance.missTime)
         {
             // 尾部已经错过判定窗口，且玩家没有开始持有。
+            // 🚨 调试日志：确认消失前是否触发 Miss
+            Debug.LogError($"🚨 LongNote MISS TRIGGERED on lane {lane} at time {t}. Y={transform.position.y}");
+
             JudgeManager.Instance.MissLongNote(this); // 通知 JudgeManager 结算 Miss
             judged = true;
             // 【注意】：音符继续下落到 offScreenDestroyY
@@ -120,6 +132,7 @@ public class LongNote : MonoBehaviour
         // 6. 自动销毁 (过线不消失)
         if (transform.position.y < offScreenDestroyY)
         {
+            Debug.LogError($"💥 LongNote DESTROYED off screen on lane {lane} at Y={transform.position.y}");
             Destroy(gameObject);
         }
     }
@@ -153,6 +166,11 @@ public class LongNote : MonoBehaviour
         this.judged = true; // 标记为已判定，防止再次开始持有
     }
 
+    private void OnDestroy()
+    {
+        // 【关键】：这里应该记录是谁触发了销毁
+        Debug.LogError($"🔥 LongNote OnDestroy called on lane {lane} at Y={transform.position.y}!");
+    }
 
 
     // ... (Getter 方法保持不变) ...

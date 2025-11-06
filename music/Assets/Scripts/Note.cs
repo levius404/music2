@@ -14,8 +14,8 @@ public class Note : MonoBehaviour
     {
         targetTime = data.time;
         lane = data.lane;
+        isJudged = false; // 【添加】确保每次生成或重用时状态都是未判定的
     }
-
 
 
 

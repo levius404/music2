@@ -1402,6 +1402,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   targetTime: 0
   lane: 0
+  offScreenDestroyY: -5
 --- !u!1001 &3996105890585897143
 PrefabInstance:
   m_ObjectHideFlags: 0
